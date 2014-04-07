@@ -25,11 +25,12 @@ namespace KeepTime
             if (calendar == null) calendar = new Calendar();
             if (calendar.Entries == null) calendar.Entries = new List<CalendarEntry>();
 
-            foreach (var notCompleted in calendar.Entries.Where(e => e.Date < DateTime.Now && !e.CheckOut.HasValue))
+            foreach (var notCompleted in calendar.Entries.Where(e => e.Date < DateTime.Now.Date && !e.CheckOut.HasValue))
             {
                 Console.WriteLine("Enter checkout-time for {0:dddd dd-MM-yyyy}:", notCompleted.Date);
                 string checkout = null;
-                while (checkout == null) {
+                while (checkout == null)
+                {
                     checkout = Console.ReadLine();
                 }
 
@@ -54,14 +55,33 @@ namespace KeepTime
             }
             else
             {
+                if (DateTime.Now.TimeOfDay.Subtract(today.CheckIn).TotalHours < 6)
+                {
+                    Console.WriteLine("Less than 6 hours? Are you sure? ([Y]/[N])");
+                    string input = null;
+                    while (input == null)
+                    {
+                        input = Console.ReadKey().Key.ToString();
+                        if (input.Equals("N", StringComparison.InvariantCultureIgnoreCase))
+                        {
+                            Finalize(calendarFile, calendar);
+                            Environment.Exit(1);
+                        }
+                    }
+                }
                 if (today.CheckOut.HasValue)
                     today.CheckOut = null;
                 else
                     today.CheckOut = DateTime.Now.TimeOfDay;
             }
 
-            File.WriteAllText(calendarFile, Newtonsoft.Json.JsonConvert.SerializeObject(calendar));
+            Finalize(calendarFile, calendar);
 
+        }
+
+        private static void Finalize(string calendarFile, Calendar calendar)
+        {
+            File.WriteAllText(calendarFile, Newtonsoft.Json.JsonConvert.SerializeObject(calendar));
         }
     }
 }
