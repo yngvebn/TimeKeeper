@@ -25,6 +25,27 @@ namespace KeepTime
             if (calendar == null) calendar = new Calendar();
             if (calendar.Entries == null) calendar.Entries = new List<CalendarEntry>();
 
+            foreach (var notCompleted in calendar.Entries.Where(e => e.Date < DateTime.Now && !e.CheckOut.HasValue))
+            {
+                Console.WriteLine("Enter checkout-time for {0:dddd dd-MM-yyyy}:", notCompleted.Date);
+                string checkout = null;
+                while (checkout == null) {
+                    checkout = Console.ReadLine();
+                }
+
+                if (checkout.Contains(":"))
+                {
+                    if (checkout.Length == 5) checkout = checkout + ":00";
+                }
+                else
+                {
+                    string hh = checkout.Substring(0, 2);
+                    string mm = checkout.Substring(2, 2);
+                    checkout = hh + ":" + mm + ":00";
+                }
+                notCompleted.CheckOut = TimeSpan.Parse(checkout);
+            }
+
             var today = calendar.Entries.FirstOrDefault(c => c.Date.Date.Equals(DateTime.Now.Date));
             if (today == null)
             {
