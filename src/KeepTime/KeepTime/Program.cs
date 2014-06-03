@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using KeepTime.Contracts;
+using Calendar = KeepTime.Contracts.Calendar;
 
 namespace KeepTime
 {
@@ -34,23 +36,26 @@ namespace KeepTime
                     checkout = Console.ReadLine();
                 }
 
-                if (checkout.Contains(":"))
-                {
-                    if (checkout.Length == 5) checkout = checkout + ":00";
-                }
-                else
-                {
-                    string hh = checkout.Substring(0, 2);
-                    string mm = checkout.Substring(2, 2);
-                    checkout = hh + ":" + mm + ":00";
-                }
-                notCompleted.CheckOut = TimeSpan.Parse(checkout);
+                
+                notCompleted.CheckOut = ParseTimeString(checkout);
             }
 
             var today = calendar.Entries.FirstOrDefault(c => c.Date.Date.Equals(DateTime.Now.Date));
             if (today == null)
             {
-                today = new CalendarEntry(DateTime.Now);
+                var checkInTime = DateTime.Now.TimeOfDay;
+                if (checkInTime > TimeSpan.FromHours(9))
+                {
+                    Console.WriteLine("Did you come in to work now? (Enter to accept, HHmm to set time manually)");
+                    string input = null;
+                    while (input == null)
+                    {
+                        input = Console.ReadLine();
+                        if (string.IsNullOrEmpty(input)) break;
+                        checkInTime = ParseTimeString(input);
+                    }
+                }
+                today = new CalendarEntry(DateTime.Now.Date.Add(checkInTime));
                 calendar.Entries.Add(today);
             }
             else
@@ -77,6 +82,21 @@ namespace KeepTime
 
             Finalize(calendarFile, calendar);
 
+        }
+
+        private static TimeSpan ParseTimeString(string checkout)
+        {
+            if (checkout.Contains(":"))
+            {
+                if (checkout.Length == 5) checkout = checkout + ":00";
+            }
+            else
+            {
+                string hh = checkout.Substring(0, 2);
+                string mm = checkout.Substring(2, 2);
+                checkout = hh + ":" + mm + ":00";
+            }
+            return TimeSpan.Parse(checkout);
         }
 
         private static void Finalize(string calendarFile, Calendar calendar)
